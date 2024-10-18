@@ -1,211 +1,263 @@
+import java.util.HashMap;
 import java.util.Scanner;
 
+// Node representing a user (Unode)
 class Unode {
-    Unode llink;
-    int data;
-    Unode rlink;
-
-    public Unode(int data) {
-        this.data = data;
-        this.llink = this.rlink = null;
+    int userID;
+    int privateKey;
+    Unode next;
+    
+    public Unode(int userID, int privateKey) {
+        this.userID = userID;
+        this.privateKey = privateKey;
+        this.next = null;
     }
 }
 
+// Node representing a resource (Rnode)
 class Rnode {
-    Rnode llink;
-    int data;
-    Rnode rlink;
-    Unode child;
-
-    public Rnode(int data) {
-        this.data = data;
-        this.llink = this.rlink = null;
-        this.child = null;
+    int resourceID;
+    int count;  // Number of users
+    int key;    // Combined private key
+    Unode head; // Head of Unode list
+    Rnode next;
+    
+    public Rnode(int resourceID) {
+        this.resourceID = resourceID;
+        this.count = 0;
+        this.key = 0;
+        this.head = null;
+        this.next = null;
     }
 }
 
+// Main class for managing resources and users
 public class DLL {
-    public static Rnode insertBegin(Rnode head, int data) {
-        Rnode temp = new Rnode(data);
-        if (head == null) {
-            head = temp;
-            return head;
-        }
-        head.llink = temp;
-        temp.rlink = head;
-        head = temp;
-        return head;
+    Rnode head; // Head of the Rnode list
+    HashMap<Integer, Integer> userKeyMap; // Map to store userID -> privateKey
+    
+    public DLL() {
+        this.head = null;
+        this.userKeyMap = new HashMap<>();
     }
 
-    public static Rnode insertEnd(Rnode head, int data) {
-        Rnode temp = new Rnode(data);
-        if (head == null) {
-            head = temp;
-            return head;
-        }
-        Rnode cur = head;
-        while (cur.rlink != null) {
-            cur = cur.rlink;
-        }
-        cur.rlink = temp;
-        temp.llink = cur;
-        return head;
+    // Function to insert Rnode at the beginning
+    public void insertBegin(int resourceID) {
+        Rnode newNode = new Rnode(resourceID);
+        newNode.next = head;
+        head = newNode;
     }
 
-    public static Rnode insertUnode(Rnode head, int data, int resource) {
-        Unode temp = new Unode(data);
-
-        Rnode cur = head;
-        while (cur != null && cur.data != resource) {
-            cur = cur.rlink;
-        }
-        if (cur == null) {
-            System.out.println("Resource node not found.");
-            return head;
-        }
-        if (cur.child == null) {
-            cur.child = temp;
+    // Function to insert Rnode at the end
+    public void insertEnd(int resourceID) {
+        Rnode newNode = new Rnode(resourceID);
+        if (head == null) {
+            head = newNode;
         } else {
-            Unode uCur = cur.child;
-            while (uCur.rlink != null) {
-                uCur = uCur.rlink;
+            Rnode temp = head;
+            while (temp.next != null) {
+                temp = temp.next;
             }
-            uCur.rlink = temp;
-            temp.llink = uCur;
+            temp.next = newNode;
         }
-        return head;
     }
 
-    public static Rnode deleteUnode(Rnode head, int data, int resource) {
-        Rnode cur = head;
-
-        while (cur != null && cur.data != resource) {
-            cur = cur.rlink;
-        }
-        if (cur == null) {
-            System.out.println("Resource node not found.");
-            return head;
-        }
-
-        Unode uCur = cur.child;
-        if (uCur == null) {
-            System.out.println("No child nodes to delete.");
-            return head;
-        }
-
-        while (uCur != null && uCur.data != data) {
-            uCur = uCur.rlink;
-        }
-        if (uCur == null) {
-            System.out.println("Unode with data " + data + " not found.");
-            return head;
-        }
-
-        if (uCur.llink != null) {
-            uCur.llink.rlink = uCur.rlink;
-        } else {
-            cur.child = uCur.rlink;
-        }
-
-        if (uCur.rlink != null) {
-            uCur.rlink.llink = uCur.llink;
-        }
-
-        return head;
-    }
-
-    public static Rnode deleteBegin(Rnode head) {
-        if (head == null) {
-            System.out.println("DLL is empty");
-            return head;
-        }
-        Rnode temp = head;
-        head = head.rlink;
+    // Function to delete Rnode from the beginning
+    public void deleteBegin() {
         if (head != null) {
-            head.llink = null;
+            head = head.next;
         }
-        return head;
     }
 
-    public static Rnode deleteEnd(Rnode head) {
-        if (head == null) {
-            System.out.println("DLL is empty");
-            return head;
-        }
-        Rnode cur = head;
-        while (cur.rlink != null) {
-            cur = cur.rlink;
-        }
-        if (cur.llink != null) {
-            cur.llink.rlink = null;
-        } else {
+    // Function to delete Rnode from the end
+    public void deleteEnd() {
+        if (head == null || head.next == null) {
             head = null;
+        } else {
+            Rnode temp = head;
+            while (temp.next.next != null) {
+                temp = temp.next;
+            }
+            temp.next = null;
         }
-        return head;
     }
 
-    public static void print(Rnode head) {
-        Rnode rCur = head;
-        while (rCur != null) {
-            System.out.print(rCur.data);
-            Unode uCur = rCur.child;
-            while (uCur != null) {
-                System.out.print("->" + uCur.data);
-                uCur = uCur.rlink;
+    // Function to add a user (Unode) to a resource (Rnode) and update the key
+    public void addUserAndUpdateKey(int resourceID, int numUsers) {
+        Rnode rnode = findResource(resourceID);
+        if (rnode == null) {
+            System.out.println("Resource not found.");
+            return;
+        }
+
+        Scanner sc = new Scanner(System.in);
+
+        for (int i = 0; i < numUsers; i++) {
+            System.out.print("Enter userID: ");
+            int userID = sc.nextInt();
+            int privateKey;
+
+            // Check if userID exists in the map
+            if (userKeyMap.containsKey(userID)) {
+                privateKey = userKeyMap.get(userID);
+                System.out.println("Reusing stored private key for user " + userID + ": " + privateKey);
+            } else {
+                System.out.print("Enter private key for user " + userID + ": ");
+                privateKey = sc.nextInt();
+                userKeyMap.put(userID, privateKey);  // Store the userID -> privateKey mapping
             }
-            System.out.println();
-            rCur = rCur.rlink;
+
+            // Add the user to the resource's user list and update the key
+            Unode newUnode = new Unode(userID, privateKey);
+            if (rnode.head == null) {
+                rnode.head = newUnode;
+            } else {
+                Unode temp = rnode.head;
+                while (temp.next != null) {
+                    temp = temp.next;
+                }
+                temp.next = newUnode;
+            }
+
+            rnode.count++;
+            rnode.key = combineKeys(rnode.key, privateKey); // Update key
+            System.out.println("Key for resource " + resourceID + " updated to: " + rnode.key);
+        }
+    }
+
+    // Function to delete a user (Unode) from a resource (Rnode) and update the key
+    public void deleteUnode(int resourceID, int userID) {
+        Rnode rnode = findResource(resourceID);
+        if (rnode == null || rnode.head == null) {
+            System.out.println("Resource or user not found.");
+            return;
+        }
+
+        Unode prev = null;
+        Unode current = rnode.head;
+
+        while (current != null && current.userID != userID) {
+            prev = current;
+            current = current.next;
+        }
+
+        if (current == null) {
+            System.out.println("User not found in the resource.");
+            return;
+        }
+
+        // Remove the Unode from the list
+        if (prev == null) {
+            rnode.head = current.next;
+        } else {
+            prev.next = current.next;
+        }
+
+        rnode.count--;
+        rnode.key = combineKeys(rnode.key, current.privateKey); // Update key by XOR-ing again
+        System.out.println("User " + userID + " removed. Key for resource " + resourceID + " updated to: " + rnode.key);
+    }
+
+    // Function to combine keys using XOR (you can modify this based on your key combination logic)
+    public int combineKeys(int existingKey, int newKey) {
+        return existingKey ^ newKey;
+    }
+
+    // Function to find a resource node by ID
+    public Rnode findResource(int resourceID) {
+        Rnode temp = head;
+        while (temp != null) {
+            if (temp.resourceID == resourceID) {
+                return temp;
+            }
+            temp = temp.next;
+        }
+        return null;
+    }
+
+    // Function to print all resources and their users
+    public void printResources() {
+        Rnode temp = head;
+        while (temp != null) {
+            System.out.print("R" + temp.resourceID + "(count=" + temp.count + ", key=" + temp.key + ")->");
+            Unode utemp = temp.head;
+            while (utemp != null) {
+                System.out.print("U" + utemp.userID + "->");
+                utemp = utemp.next;
+            }
+            System.out.println("null");
+            temp = temp.next;
+        }
+    }
+
+    // Function to print the userIDs and their private keys stored in the HashMap
+    public void printUserKeyMap() {
+        System.out.println("UserID -> PrivateKey Map:");
+        for (HashMap.Entry<Integer, Integer> entry : userKeyMap.entrySet()) {
+            System.out.println("UserID: " + entry.getKey() + ", PrivateKey: " + entry.getValue());
         }
     }
 
     public static void main(String[] args) {
         Scanner sc = new Scanner(System.in);
-        Rnode head = null;
-        int choice, ele, resource;
+        DLL rm = new DLL();
+        int choice;
 
-        while (true) {
-            System.out.println("1. Insert begin \n2. Insert end\n3. Insert unode\n4. Print\n5. Delete begin\n6. Delete end\n7. Delete unode\n8. Exit");
+        do {
+            System.out.println("1.Insert begin \n2.Insert end \n3.Print \n4.Delete begin \n5.Delete end \n6.Insert unode & update key \n7.Delete unode & update key \n8.Print userID -> PrivateKey map \n9.Exit");
             choice = sc.nextInt();
+
             switch (choice) {
                 case 1:
-                    System.out.println("Enter data:");
-                    ele = sc.nextInt();
-                    head = insertBegin(head, ele);
+                    System.out.print("Enter resource ID: ");
+                    rm.insertBegin(sc.nextInt());
                     break;
+
                 case 2:
-                    System.out.println("Enter data:");
-                    ele = sc.nextInt();
-                    head = insertEnd(head, ele);
+                    System.out.print("Enter resource ID: ");
+                    rm.insertEnd(sc.nextInt());
                     break;
+
                 case 3:
-                    System.out.println("Enter the resource (rnode data) and unode data:");
-                    resource = sc.nextInt();
-                    ele = sc.nextInt();
-                    head = insertUnode(head, ele, resource);
+                    rm.printResources();
                     break;
+
                 case 4:
-                    print(head);
+                    rm.deleteBegin();
                     break;
+
                 case 5:
-                    head = deleteBegin(head);
+                    rm.deleteEnd();
                     break;
+
                 case 6:
-                    head = deleteEnd(head);
+                    System.out.print("Enter resource ID: ");
+                    int resourceID = sc.nextInt();
+                    System.out.print("Enter number of users to add: ");
+                    int numUsers = sc.nextInt();
+                    rm.addUserAndUpdateKey(resourceID, numUsers);
                     break;
+
                 case 7:
-                    System.out.println("Enter the resource (rnode data) and unode data to delete:");
-                    resource = sc.nextInt();
-                    ele = sc.nextInt();
-                    head = deleteUnode(head, ele, resource);
+                    System.out.print("Enter resource ID: ");
+                    int resID = sc.nextInt();
+                    System.out.print("Enter userID to delete: ");
+                    int userID = sc.nextInt();
+                    rm.deleteUnode(resID, userID);
                     break;
+
                 case 8:
-                    sc.close();
-                    System.exit(0);
+                    rm.printUserKeyMap();
                     break;
+
+                case 9:
+                    System.out.println("Exiting...");
+                    break;
+
                 default:
-                    System.out.println("Invalid choice");
+                    System.out.println("Invalid choice.");
                     break;
             }
-        }
+        } while (choice != 9);
     }
 }
