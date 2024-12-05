@@ -78,14 +78,14 @@ public class DLL {
     }
 
     // Function to populate resources and users from the CSV file
-    public void populateFromCSV(String fileName) throws IOException {
+        public void populateFromCSV(String fileName) throws IOException {
         BufferedReader br = new BufferedReader(new FileReader(fileName));
         String line;
 
         // Read the header to initialize resources
         if ((line = br.readLine()) != null) { // Read the first line (header)
             String[] headers = line.split(",");
-            for (int i = 1; i < headers.length; i++) { // Skip the first column (User Private Key)
+            for (int i = 1; i < headers.length; i++) { // Skip the first column (Private Key)
                 int resourceID = i; // Column index as resource ID
                 insertEnd(resourceID); // Create Rnodes for each resource
             }
@@ -95,13 +95,12 @@ public class DLL {
         int userID = 1; // Start user IDs from 1
         while ((line = br.readLine()) != null) {
             String[] data = line.split(",");
-            String privateKey = data[0]; // First column is the private key
+            String privateKey = data[1]; // First column is the private key (as a string)
 
-            // Map the private key for this user
+            // Map the private key for this user (store it as a string)
             userKeyMap.put(userID, privateKey);
 
             // Assign the user to resources
-            // Updated part in the populateFromCSV method
             for (int i = 1; i < data.length; i++) { // Iterate over resource connections
                 try {
                     int isConnected = Integer.parseInt(data[i]); // Check if connected
@@ -123,13 +122,11 @@ public class DLL {
 
                         // Update resource metadata
                         rnode.count++;
-                        rnode.key = combineKeys(rnode.key, privateKey); // Update key
+                        rnode.key = combineKeys(rnode.key, privateKey); // Update key (using hash for simplicity)
                     }
                 } catch (NumberFormatException e) {
-                    System.out.println("Invalid resource connection value for user " + userID + ", column " + i + ". Skipping...");
                 }
             }
-
             userID++;
         }
 
@@ -140,7 +137,7 @@ public class DLL {
     public void printResources() {
         Rnode temp = head;
         while (temp != null) {
-            System.out.print("R" + temp.resourceID + "(count=" + temp.count + ", key=" + temp.key + ")->");
+            System.out.print("R" + (temp.resourceID-1) + "(count=" + temp.count + ", key=" + temp.key + ")->");
             Unode utemp = temp.head;
             while (utemp != null) {
                 System.out.print("U" + utemp.userID + "->");
@@ -153,7 +150,7 @@ public class DLL {
 
     // Function to print the userIDs and their private keys stored in the HashMap
     public void printUserKeyMap() {
-        System.out.println("UserID -> PrivateKey Map:");
+        System.out.println("UserID -> PrivateKey:");
         for (HashMap.Entry<Integer, String> entry : userKeyMap.entrySet()) {
             System.out.println("UserID: " + entry.getKey() + ", PrivateKey: " + entry.getValue());
         }
